@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>shara</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #eeeeee;
+        }
+
+        .file-upload {
+            background-color: #ffffff;
+            padding: 20px;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            outline: none;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-wrap {
+            margin-top: 20px;
+            border: 4px dashed #1fb264;
+            position: relative;
+        }
+
+        .file-upload-wrap:hover,
+        .file-dropping {
+            background-color: #1fb264;
+            border: 4px dashed #ffffff;
+        }
+
+        .file-upload-content {
+            display: none;
+            text-align: center;
+        }
+
+        .file-upload-title-wrap {
+            padding: 0 15px 15px 15px;
+            color: #222;
+        }
+
+        .file-upload-drag-text {
+            text-align: center;
+        }
+
+        .file-upload-drag-text h3 {
+            font-weight: 100;
+            text-transform: uppercase;
+            color: #15824b;
+            padding: 60px 0;
+        }
+
+        .file-upload-image {
+            max-height: 400px;
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <div class="file-upload">
+                    <button type="button" id="btnAdd" class="btn btn-success">Добавить файл</button>
+                    <form class="upload-form">
+                        <div class="file-upload-wrap">
+                            <input class="file-upload-input" type="file" name="file" onchange="readURL(this);"
+                                accept="*" />
+                            <div class="file-upload-drag-text">
+                                <h3>Перетащите файл или выберите "Добавить файл"</h3>
+                            </div>
+                        </div>
+                        <div class="file-upload-content">
+                            <img class="file-upload-image" src="#" alt="Ваше изображение" />
+                            <div class="file-upload-title-wrap">
+                                <button type="button" class="btn btn-danger" onclick="removeUpload()">Убрать <span
+                                        class="file-upload-title"></span></button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success mt-3">Загрузить</button>
+                    </form>
+                </div>
+                <div id="result" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
+
+    <script>
+        const $btnAdd = document.querySelector('#btnAdd');
+        const $uploadForm = document.querySelector('.upload-form');
+        const $fileUploadWrap = document.querySelector('.file-upload-wrap');
+        const $fileUploadInput = document.querySelector('.file-upload-input');
+        const $fileUploadContent = document.querySelector('.file-upload-content');
+        const $fileUploadImage = document.querySelector('.file-upload-image');
+        const $fileUploadTitle = document.querySelector('.file-upload-title');
+        const $result = document.querySelector('#result');
+
+        function readURL(input) {
+            if (input.files && input.files[0]) {
+                const fileName = input.files[0].name;
+                $fileUploadWrap.style.display = 'none';
+                $fileUploadTitle.innerHTML = fileName;
+                if (/\.(bmp|gif|jpg|jpeg|png|svg)$/i.test(fileName)) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $fileUploadImage.setAttribute('src', e.target.result);
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                } else {
+                    $fileUploadImage.setAttribute('src', 'images/noimage.jpg');
+                }
+                $fileUploadContent.style.display = 'block';
+            } else {
+                removeUpload();
+            }
+        }
+
+        function removeUpload() {
+            $fileUploadInput.value = '';
+            $fileUploadContent.style.display = 'none';
+            $fileUploadWrap.classList.remove('file-dropping');
+            $fileUploadWrap.style.display = 'block';
+        }
+
+        const submitForm = async (form) => {
+            const response = await fetch("api/v1/upload", {
+                method: 'POST',
+                body: new FormData(form)
+            });
+            if (response.msgType === "error") {
+                throw new Error(response.msg);
+            }
+            return await response.json();
+        }
+
+        const syntaxHighlight = json => {
+            if (typeof json != 'string') {
+                json = JSON.stringify(json, undefined, 2)
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+                let cls = 'json-number'
+                if (/^"/.test(match)) {
+                    cls = (/:$/.test(match)) ? 'json-key' : 'json-string'
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean'
+                } else if (/null/.test(match)) {
+                    cls = 'json-null'
+                }
+                return `<span class="${cls}">${match}</span>`
+            })
+        }
+
+        $btnAdd.addEventListener('click', () => {
+            $fileUploadInput.click();
+        });
+
+        $fileUploadWrap.addEventListener('dragover', () => {
+            $fileUploadWrap.classList.add('file-dropping');
+        });
+
+        $fileUploadWrap.addEventListener('dragleave', () => {
+            $fileUploadWrap.classList.remove('file-dropping');
+        });
+
+        $uploadForm.addEventListener('submit', event => {
+            event.preventDefault();
+
+            submitForm($uploadForm)
+                .then(response => {
+                    const { result: { fileId, origName } } = response;
+                    $result.querySelectorAll('.link').forEach(entry => entry.remove());
+
+                    const link = document.createElement('a');
+                    link.classList.add('link');
+                    link.href = `api/v1/download/${fileId}`;
+                    link.download = origName
+                    link.target = '_blank'
+                    link.innerHTML = 'Скачать';
+                    $result.appendChild(link);
+                })
+                .catch(err => {
+                    console.error(`${err.name}: ${err.message}`);
+                });
+
+        });
+    </script>
+</body>
+
+</html>
