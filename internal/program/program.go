@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
-	"shara/internal/handlers"
 	"time"
+
+	"shara/internal/handlers"
+	"shara/web"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/secure"
 	"github.com/gin-gonic/gin"
-
 	"github.com/kardianos/service"
-
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-
 	"github.com/spf13/viper"
 )
 
@@ -31,7 +29,7 @@ type Program struct {
 }
 
 // New создаёт новую программу
-func New(cfg *viper.Viper, db *sql.DB, workDir string) *Program {
+func New(cfg *viper.Viper, db *sql.DB) *Program {
 	p := new(Program)
 	p.config = cfg
 	p.db = db
@@ -55,8 +53,13 @@ func New(cfg *viper.Viper, db *sql.DB, workDir string) *Program {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
-	// Путь до статики
-	router.Use(static.Serve("/", static.LocalFile(filepath.Join(workDir, "web"), true)))
+	// Файлы интерфейса
+	router.Use(static.Serve("/", EmbedFolder(web.FS, "public")))
+
+	// router.NoRoute(func(c *gin.Context) {
+	// 	log.Printf("%s doesn't exists, redirect on /\n", c.Request.URL.Path)
+	// 	c.Redirect(http.StatusMovedPermanently, "/")
+	// })
 
 	// Некоторые настройки, связанные с безопасностью
 	router.Use(secure.Secure(secure.Options{

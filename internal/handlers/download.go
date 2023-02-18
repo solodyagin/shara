@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"net/http"
 	"os"
+
 	"shara/internal/models"
 	"shara/internal/response"
 
@@ -39,7 +40,7 @@ func HandleDownload(p models.IProgram) gin.HandlerFunc {
 		}
 
 		// Создаём временный файл
-		tempFile, err := os.CreateTemp(cfg.GetString("temp_dir"), "temp")
+		tempFile, err := os.CreateTemp(cfg.GetString("pathes.temp_dir"), "temp")
 		if err != nil {
 			response.SendErrorStatus(c, http.StatusInternalServerError, "Возникла ошибка при создании временного файла")
 			return

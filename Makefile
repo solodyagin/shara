@@ -10,7 +10,8 @@ endif
 windows: prepare
 	export GOOS=windows
 	export GOARCH=amd64
-	go build -trimpath -ldflags "-s -w" -o ./dist/shara.exe ./cmd/shara
+	export CGO_ENABLED=1
+	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o ./dist/shara.exe ./cmd/shara
 
 linux: prepare
 	export GOOS=linux
@@ -20,10 +21,8 @@ linux: prepare
 
 prepare:
 	@rm -rf ./dist/
-	@mkdir -p ./dist/
-	@cp -r ./configs ./dist/
-	@cp -r ./db ./dist/
-	@cp -r ./web ./dist/
+	@mkdir -p ./dist/configs/
+	@cp ./configs/dist.shara.yaml ./dist/configs/shara.yaml
 
 .PHONY: build windows linux
 .DEFAULT_GOAL=build

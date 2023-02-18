@@ -5,8 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>shara</title>
-    <link href="css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             font-family: sans-serif;
@@ -48,7 +47,7 @@
 
         .file-upload-title-wrap {
             padding: 0 15px 15px 15px;
-            color: #222;
+            color: #222222;
         }
 
         .file-upload-drag-text {
@@ -100,9 +99,7 @@
         </div>
     </div>
 
-    <script src="js/bootstrap.bundle.min.js"
-        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
-        crossorigin="anonymous"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
 
     <script>
         const $btnAdd = document.querySelector('#btnAdd');
@@ -150,24 +147,6 @@
                 throw new Error(response.msg);
             }
             return await response.json();
-        }
-
-        const syntaxHighlight = json => {
-            if (typeof json != 'string') {
-                json = JSON.stringify(json, undefined, 2)
-            }
-            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
-                let cls = 'json-number'
-                if (/^"/.test(match)) {
-                    cls = (/:$/.test(match)) ? 'json-key' : 'json-string'
-                } else if (/true|false/.test(match)) {
-                    cls = 'json-boolean'
-                } else if (/null/.test(match)) {
-                    cls = 'json-null'
-                }
-                return `<span class="${cls}">${match}</span>`
-            })
         }
 
         $btnAdd.addEventListener('click', () => {

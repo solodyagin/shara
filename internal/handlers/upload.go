@@ -4,16 +4,19 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+
 	"shara/internal/models"
 	"shara/internal/response"
 	"shara/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gofrs/uuid"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -82,17 +85,16 @@ func HandleUpload(p models.IProgram) gin.HandlerFunc {
 		}
 
 		// Создаём временный файл
-		tempFile, err := os.CreateTemp(cfg.GetString("temp_dir"), "temp")
+		tempFile, err := os.CreateTemp(cfg.GetString("pathes.temp_dir"), "temp")
 		if err != nil {
 			response.SendErrorStatus(c, http.StatusInternalServerError, "Возникла ошибка при создании временного файла")
 			return
 		}
-		tempFileName := tempFile.Name()
-		tempFile.Close()
-		defer os.Remove(tempFileName)
+		defer tempFile.Close()
+		defer os.Remove(tempFile.Name())
 
 		// Сохраняем во временный файл
-		if err := c.SaveUploadedFile(formFileHeader, tempFileName); err != nil {
+		if err := c.SaveUploadedFile(formFileHeader, tempFile.Name()); err != nil {
 			response.SendErrorStatus(c, http.StatusInternalServerError, "Возникла ошибка при сохранении во временный файл")
 			return
 		}
@@ -116,7 +118,7 @@ func HandleUpload(p models.IProgram) gin.HandlerFunc {
 		metadata := map[string]string{}
 		metadata["origName"] = formFileHeader.Filename
 
-		info, err := client.FPutObject(ctx, bucketName, formFileHash, tempFileName, minio.PutObjectOptions{
+		info, err := client.FPutObject(ctx, bucketName, formFileHash, tempFile.Name(), minio.PutObjectOptions{
 			UserMetadata: metadata,
 			ContentType:  formFileType,
 		})
@@ -125,9 +127,8 @@ func HandleUpload(p models.IProgram) gin.HandlerFunc {
 			return
 		}
 
-		// u, _ := uuid.NewV4()
-		// fileId = hex.EncodeToString(u.Bytes()) + utils.RandomString(16)
-		fileId = utils.RandomString(48)
+		u, _ := uuid.NewV4()
+		fileId = hex.EncodeToString(u.Bytes()) + utils.RandomString(16)
 
 		// Записываем в БД
 		tx, err := db.Begin()
