@@ -99,7 +99,7 @@ func main() {
 
 	svcConfig := &service.Config{
 		Name:        cfg.GetString("service.name"),
-		DisplayName: cfg.GetString("service.displayname"),
+		DisplayName: cfg.GetString("service.display_name"),
 		Description: cfg.GetString("service.description"),
 		Option:      options,
 	}
