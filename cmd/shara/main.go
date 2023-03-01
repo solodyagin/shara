@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -9,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	sqlitedb "shara/internal/database/sqlite"
 	"shara/internal/program"
 	"shara/internal/utils"
 	"shara/migrations"
@@ -68,29 +68,29 @@ func main() {
 	}
 
 	// Открываем БД
-	db, err := sql.Open("sqlite3", cfg.GetString("pathes.database"))
+	db, err := sqlitedb.New(cfg.GetString("pathes.database"))
 	if err != nil {
 		log.Fatalf("Error: %s\n", err)
 	}
 	defer db.Close()
 
 	// Выполняем миграцию БД
-	ds, err := iofs.New(migrations.FS, "sqlite")
+	sourceInstance, err := iofs.New(migrations.FS, "sqlite")
 	if err != nil {
 		log.Fatalf("Error: %s\n", err)
 	}
-	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	databaseInstance, err := sqlite3.WithInstance(db.DB, &sqlite3.Config{})
 	if err != nil {
 		log.Fatalf("Error: %s\n", err)
 	}
-	m, err := migrate.NewWithInstance("iofs", ds, "sqlite3", driver)
+	migrator, err := migrate.NewWithInstance("iofs", sourceInstance, "sqlite3", databaseInstance)
 	if err != nil {
 		log.Fatalf("Error: %s\n", err)
 	}
-	m.Up()
+	migrator.Up()
 
 	// Создаём программу
-	p := program.New(cfg, db)
+	prg := program.New(cfg, db)
 
 	// Задаём настройки для службы
 	options := make(service.KeyValue)
@@ -99,7 +99,7 @@ func main() {
 
 	svcConfig := &service.Config{
 		Name:        cfg.GetString("service.name"),
-		DisplayName: cfg.GetString("service.displayname"),
+		DisplayName: cfg.GetString("service.display_name"),
 		Description: cfg.GetString("service.description"),
 		Option:      options,
 	}
@@ -111,7 +111,7 @@ func main() {
 	}
 
 	// Создаём службу
-	svc, err := service.New(p, svcConfig)
+	svc, err := service.New(prg, svcConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func main() {
 	errs := make(chan error, 5)
 
 	// Открываем системный логгер
-	logger, err := svc.Logger(errs)
+	svcLogger, err := svc.Logger(errs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,6 +147,6 @@ func main() {
 
 	// Запускаем службу
 	if err := svc.Run(); err != nil {
-		logger.Error(err)
+		svcLogger.Error(err)
 	}
 }

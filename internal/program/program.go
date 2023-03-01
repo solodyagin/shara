@@ -1,104 +1,34 @@
 package program
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
-	"time"
 
-	"shara/internal/handlers"
-	"shara/web"
+	"shara/internal/database"
+	"shara/internal/engine"
 
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/contrib/secure"
-	"github.com/gin-gonic/gin"
 	"github.com/kardianos/service"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
 )
 
 type Program struct {
 	exit   chan struct{} // Канал для остановки работы
-	config *viper.Viper  // Конфиг
-	db     *sql.DB
-	client *minio.Client // Клиент Minio
-	server *http.Server  // Вебсервер
+	config *viper.Viper
+	engine *engine.Engine
 }
 
 // New создаёт новую программу
-func New(cfg *viper.Viper, db *sql.DB) *Program {
+func New(cfg *viper.Viper, db database.Database) *Program {
 	p := new(Program)
 	p.config = cfg
-	p.db = db
-
-	// Инициализируем Minio клиент
-	client, err := minio.New(p.config.GetString("minio.endpoint"), &minio.Options{
-		Creds: credentials.NewStaticV4(
-			p.config.GetString("minio.access_key"),
-			p.config.GetString("minio.secret_key"),
-			"",
-		),
-		Secure: p.config.GetBool("minio.use_ssl"),
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
-	p.client = client
-
-	// Инициализируем вебсервер
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
-	router.Use(gin.Recovery())
-
-	// Файлы интерфейса
-	router.Use(static.Serve("/", EmbedFolder(web.FS, "public")))
-
-	// router.NoRoute(func(c *gin.Context) {
-	// 	log.Printf("%s doesn't exists, redirect on /\n", c.Request.URL.Path)
-	// 	c.Redirect(http.StatusMovedPermanently, "/")
-	// })
-
-	// Некоторые настройки, связанные с безопасностью
-	router.Use(secure.Secure(secure.Options{
-		// AllowedHosts:          []string{"example.com", "ssl.example.com"},
-		// SSLRedirect:           true,
-		// SSLHost:               "ssl.example.com",
-		// SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
-		// STSSeconds:            315360000,
-		// STSIncludeSubdomains:  true,
-		FrameDeny:             true, // Запрещает показывать сайт во фрейме
-		ContentTypeNosniff:    true,
-		BrowserXssFilter:      true,
-		ContentSecurityPolicy: "default-src 'self'",
-	}))
-
-	// API
-	v1 := router.Group("/api/v1")
-	v1.POST("/upload", handlers.HandleUpload(p))
-	v1.GET("/download/:fileId", handlers.HandleDownload(p))
-
-	addr := fmt.Sprintf("%s:%d", p.config.GetString("server.host"), p.config.GetInt("server.port"))
-
-	p.server = &http.Server{
-		Addr:         addr,
-		Handler:      router,
-		WriteTimeout: 5 * time.Minute, // Таймаут ответа от сервера
-	}
-
+	p.engine = engine.New(cfg, db)
 	return p
 }
 
 // Start вызывается при запуске службы
 func (p *Program) Start(s service.Service) error {
 	p.exit = make(chan struct{})
-	go func() {
-		p.listen() // Запускаем вебсервер
-		<-p.exit
-		p.shutdown() // Останавливаем вебсервер
-	}()
+	go p.run()
 	return nil
 }
 
@@ -108,36 +38,13 @@ func (p *Program) Stop(s service.Service) error {
 	return nil
 }
 
-// listen запускает вебсервер
-func (p *Program) listen() {
-	go func() {
-		if err := p.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("Server failed to start due to err: %v\n", err)
-			panic(err)
-		}
-	}()
-	log.Printf("Server is running at %s\n", p.server.Addr)
-}
+// run основная работа программы
+func (p *Program) run() {
+	addr := fmt.Sprintf("%s:%d", p.config.GetString("server.host"), p.config.GetInt("server.port"))
+	p.engine.Run(addr)
+	log.Printf("Server is running at %s\n", addr)
 
-// shutdown останавливает вебсервер
-func (p *Program) shutdown() error {
-	// Попытка корректного завершения работы
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	return p.server.Shutdown(ctx)
-}
+	<-p.exit
 
-// GetConfig возвращает указатель на config
-func (p *Program) GetConfig() *viper.Viper {
-	return p.config
-}
-
-// GetDB
-func (p *Program) GetDB() *sql.DB {
-	return p.db
-}
-
-// GetClient
-func (p *Program) GetClient() *minio.Client {
-	return p.client
+	_ = p.engine.Stop()
 }
