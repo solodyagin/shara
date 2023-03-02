@@ -43,6 +43,7 @@ func New(cfg *viper.Viper, db database.Database) *Engine {
 	}
 	s.client = client
 
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
 
