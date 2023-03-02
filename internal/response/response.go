@@ -33,10 +33,6 @@ func SendSuccess(c *gin.Context, msg string, result Result) {
 	c.JSON(http.StatusOK, ResponseSuccess{MsgType: MsgTypeSuccess, Msg: msg, Result: result})
 }
 
-func SendErrorStatus(c *gin.Context, status int, msg string) {
+func SendError(c *gin.Context, status int, msg string) {
 	c.AbortWithStatusJSON(status, ResponseError{MsgType: MsgTypeError, Msg: msg})
-}
-
-func SendError(c *gin.Context, msg string) {
-	SendErrorStatus(c, http.StatusOK, msg)
 }
