@@ -1,7 +1,18 @@
 {
-  "editor.fontFamily": "'Fira Code', Consolas, 'Courier New', monospace",
-  "editor.fontLigatures": true,
-  "editor.fontWeight": "400",
-  "editor.foldingStrategy": "indentation",
-  "editor.rulers": [200]
+	"editor.fontFamily": "'Fira Code', Consolas, 'Courier New', monospace",
+	"editor.fontLigatures": true,
+	"editor.fontWeight": "400",
+	"editor.foldingStrategy": "indentation",
+	"editor.rulers": [200],
+	"[html]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[css]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"prettier.arrowParens": "avoid",
+	"prettier.printWidth": 200,
+	"prettier.semi": true,
+	"prettier.singleQuote": true,
+	"prettier.useTabs": true
 }

@@ -20,7 +20,7 @@ func New(path string) (*SqliteDB, error) {
 
 // GetRecordByFileId
 func (db *SqliteDB) GetRecordByFileId(fileId string) (*models.Record, error) {
-	stmt, err := db.Prepare(`SELECT hash_sum, orig_name, file_id, size FROM files WHERE file_id = :file_id`)
+	stmt, err := db.Prepare(`SELECT hash_sum, orig_name, file_id, size FROM shara_files WHERE file_id = :file_id`)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (db *SqliteDB) GetRecordByFileId(fileId string) (*models.Record, error) {
 
 // GetRecordByHashSum
 func (db *SqliteDB) GetRecordByHashSum(hashSum string) (*models.Record, error) {
-	stmt, err := db.Prepare(`SELECT hash_sum, orig_name, file_id, size FROM files WHERE hash_sum = :hash_sum`)
+	stmt, err := db.Prepare(`SELECT hash_sum, orig_name, file_id, size FROM shara_files WHERE hash_sum = :hash_sum`)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (db *SqliteDB) PutRecord(r *models.Record) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(`INSERT INTO files(hash_sum, orig_name, file_id, size) VALUES(:hash_sum, :orig_name, :file_id, :size) ON CONFLICT(hash_sum) DO NOTHING;`)
+	stmt, err := tx.Prepare(`INSERT INTO shara_files(hash_sum, orig_name, file_id, size) VALUES(:hash_sum, :orig_name, :file_id, :size) ON CONFLICT(hash_sum) DO NOTHING;`)
 	if err != nil {
 		tx.Rollback()
 		return err

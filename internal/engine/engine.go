@@ -25,29 +25,30 @@ type Engine struct {
 }
 
 func New(cfg *viper.Viper, db database.Database) *Engine {
-	s := new(Engine)
-	s.config = cfg
-	s.db = db
+	e := new(Engine)
+	e.config = cfg
+	e.db = db
 
 	// Инициализируем Minio клиент
-	client, err := minio.New(s.config.GetString("minio.endpoint"), &minio.Options{
+	client, err := minio.New(e.config.GetString("minio.endpoint"), &minio.Options{
 		Creds: credentials.NewStaticV4(
-			s.config.GetString("minio.access_key"),
-			s.config.GetString("minio.secret_key"),
+			e.config.GetString("minio.access_key"),
+			e.config.GetString("minio.secret_key"),
 			"",
 		),
-		Secure: s.config.GetBool("minio.use_ssl"),
+		Secure: e.config.GetBool("minio.use_ssl"),
 	})
 	if err != nil {
 		log.Fatalln(err)
 	}
-	s.client = client
+	e.client = client
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
 
 	// Файлы интерфейса
+	// router.Use(static.Serve("/", static.LocalFile(path.Join("web", "public"), true)))
 	router.Use(static.Serve("/", EmbedFolder(web.FS, "public")))
 
 	// router.NoRoute(func(c *gin.Context) {
@@ -69,17 +70,16 @@ func New(cfg *viper.Viper, db database.Database) *Engine {
 		ContentSecurityPolicy: "default-src 'self'",
 	}))
 
-	// API
-	v1 := router.Group("/api/v1")
-	v1.POST("/upload", s.HandleUpload())
-	v1.GET("/download/:fileId", s.HandleDownload())
+	// Обработчики
+	router.POST("/upload", e.HandleUpload())
+	router.GET("/download/:fileId", e.HandleDownload())
 
-	s.server = &http.Server{
+	e.server = &http.Server{
 		Handler:      router,
 		WriteTimeout: 5 * time.Minute, // Таймаут ответа от сервера
 	}
 
-	return s
+	return e
 }
 
 // Run
