@@ -11,20 +11,20 @@ import (
 	"net/http"
 	"os"
 
-	"shara/internal/models"
-	"shara/internal/response"
-	"shara/internal/utils"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
 	"github.com/minio/minio-go/v7"
+
+	"shara/internal/models"
+	"shara/internal/response"
+	"shara/internal/utils"
 )
 
 // HandleUpload
-func (e *Engine) HandleUpload() gin.HandlerFunc {
+func (s *Server) HandleUpload() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Ограничиваем размер загружаемого файла
-		maxUploadSize := e.config.GetInt64("max_upload_size")
+		maxUploadSize := s.cfg.GetInt64("max_upload_size")
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize)
 
 		// Парсируем данные
@@ -55,7 +55,7 @@ func (e *Engine) HandleUpload() gin.HandlerFunc {
 		hashSum := fmt.Sprintf("%x", hash.Sum(nil))
 
 		// Ищем в БД запись с такой контрольной суммой
-		r, err := e.db.GetRecordByHashSum(hashSum)
+		r, err := s.db.GetRecordByHash(hashSum)
 		if err != nil && err != sql.ErrNoRows {
 			response.SendError(c, http.StatusInternalServerError, err.Error())
 			return
@@ -70,7 +70,7 @@ func (e *Engine) HandleUpload() gin.HandlerFunc {
 		}
 
 		// Создаём временный файл
-		tempFile, err := os.CreateTemp(e.config.GetString("pathes.temp_dir"), "temp")
+		tempFile, err := os.CreateTemp(s.cfg.GetString("pathes.temp_dir"), "temp")
 		if err != nil {
 			response.SendError(c, http.StatusInternalServerError, "Возникла ошибка при создании временного файла")
 			return
@@ -86,10 +86,10 @@ func (e *Engine) HandleUpload() gin.HandlerFunc {
 
 		// Создаём bucket
 		ctx := context.Background()
-		bucketName := e.config.GetString("minio.bucket_name")
-		location := e.config.GetString("minio.location")
-		if err := e.client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location, ObjectLocking: true}); err != nil {
-			if exists, errBucketExists := e.client.BucketExists(ctx, bucketName); exists && errBucketExists == nil {
+		bucketName := s.cfg.GetString("minio.bucket_name")
+		location := s.cfg.GetString("minio.location")
+		if err := s.client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location, ObjectLocking: true}); err != nil {
+			if exists, errBucketExists := s.client.BucketExists(ctx, bucketName); exists && errBucketExists == nil {
 				log.Printf("We already own %s\n", bucketName)
 			} else {
 				response.SendError(c, http.StatusInternalServerError, err.Error())
@@ -103,7 +103,7 @@ func (e *Engine) HandleUpload() gin.HandlerFunc {
 		metadata := map[string]string{}
 		metadata["origName"] = fileHeader.Filename
 
-		info, err := e.client.FPutObject(ctx, bucketName, hashSum, tempFile.Name(), minio.PutObjectOptions{
+		info, err := s.client.FPutObject(ctx, bucketName, hashSum, tempFile.Name(), minio.PutObjectOptions{
 			UserMetadata: metadata,
 			ContentType:  contentType,
 		})
@@ -122,7 +122,7 @@ func (e *Engine) HandleUpload() gin.HandlerFunc {
 			Size:     info.Size,
 		}
 
-		if err := e.db.PutRecord(rec); err != nil {
+		if err := s.db.InsertRecord(rec); err != nil {
 			response.SendError(c, http.StatusInternalServerError, err.Error())
 			return
 		}

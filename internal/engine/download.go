@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"os"
 
-	"shara/internal/response"
-
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
+
+	"shara/internal/response"
 )
 
 // HandleDownload
-func (e *Engine) HandleDownload() gin.HandlerFunc {
+func (s *Server) HandleDownload() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fileId := c.Param("fileId")
 		if fileId == "" {
@@ -20,14 +20,14 @@ func (e *Engine) HandleDownload() gin.HandlerFunc {
 			return
 		}
 
-		r, err := e.db.GetRecordByFileId(fileId)
+		rec, err := s.db.GetRecordById(fileId)
 		if err != nil {
 			response.SendError(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 
 		// Создаём временный файл
-		tempFile, err := os.CreateTemp(e.config.GetString("pathes.temp_dir"), "temp")
+		tempFile, err := os.CreateTemp(s.cfg.GetString("pathes.temp_dir"), "temp")
 		if err != nil {
 			response.SendError(c, http.StatusInternalServerError, "Возникла ошибка при создании временного файла")
 			return
@@ -37,13 +37,13 @@ func (e *Engine) HandleDownload() gin.HandlerFunc {
 
 		// Скачиваем из Minio во временный файл
 		ctx := context.Background()
-		bucketName := e.config.GetString("minio.bucket_name")
-		if err := e.client.FGetObject(ctx, bucketName, r.HashSum, tempFile.Name(), minio.GetObjectOptions{}); err != nil {
+		bucketName := s.cfg.GetString("minio.bucket_name")
+		if err := s.client.FGetObject(ctx, bucketName, rec.HashSum, tempFile.Name(), minio.GetObjectOptions{}); err != nil {
 			response.SendError(c, http.StatusInternalServerError, "Возникла ошибка при получении файла")
 			return
 		}
 
 		// Отдаём файл клиенту
-		c.File(tempFile.Name())
+		c.FileAttachment(tempFile.Name(), rec.OrigName)
 	}
 }

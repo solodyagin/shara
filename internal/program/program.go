@@ -12,23 +12,30 @@ import (
 )
 
 type Program struct {
-	exit   chan struct{} // Канал для остановки работы
-	config *viper.Viper
-	engine *engine.Engine
+	exit chan struct{} // Канал для остановки работы
+	cfg  *viper.Viper
+	srv  *engine.Server
 }
 
 // New создаёт новую программу
 func New(cfg *viper.Viper, db database.Database) *Program {
 	p := new(Program)
-	p.config = cfg
-	p.engine = engine.New(cfg, db)
+	p.cfg = cfg
+	p.srv = engine.NewServer(cfg, db)
 	return p
 }
 
 // Start вызывается при запуске службы
 func (p *Program) Start(s service.Service) error {
 	p.exit = make(chan struct{})
-	go p.run()
+	// Основная работа программы
+	go func() {
+		addr := fmt.Sprintf("%s:%d", p.cfg.GetString("server.host"), p.cfg.GetInt("server.port"))
+		p.srv.Run(addr)
+		log.Printf("Server is running at %s\n", addr)
+		<-p.exit
+		_ = p.srv.Stop()
+	}()
 	return nil
 }
 
@@ -36,15 +43,4 @@ func (p *Program) Start(s service.Service) error {
 func (p *Program) Stop(s service.Service) error {
 	close(p.exit)
 	return nil
-}
-
-// run основная работа программы
-func (p *Program) run() {
-	addr := fmt.Sprintf("%s:%d", p.config.GetString("server.host"), p.config.GetInt("server.port"))
-	p.engine.Run(addr)
-	log.Printf("Server is running at %s\n", addr)
-
-	<-p.exit
-
-	_ = p.engine.Stop()
 }

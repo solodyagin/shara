@@ -4,10 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"path"
 	"time"
-
-	"shara/internal/database"
-	"shara/web"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/secure"
@@ -15,41 +13,50 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
+
+	"shara/internal/database"
+	"shara/internal/debug"
+	"shara/internal/embedfs"
+	"shara/web"
 )
 
-type Engine struct {
-	config *viper.Viper
-	db     database.Database
-	client *minio.Client
-	server *http.Server
+type Server struct {
+	cfg     *viper.Viper
+	db      database.Database
+	client  *minio.Client
+	httpSrv *http.Server
 }
 
-func New(cfg *viper.Viper, db database.Database) *Engine {
-	e := new(Engine)
-	e.config = cfg
-	e.db = db
+// NewServer
+func NewServer(cfg *viper.Viper, db database.Database) *Server {
+	srv := new(Server)
+	srv.cfg = cfg
+	srv.db = db
 
 	// Инициализируем Minio клиент
-	client, err := minio.New(e.config.GetString("minio.endpoint"), &minio.Options{
+	client, err := minio.New(srv.cfg.GetString("minio.endpoint"), &minio.Options{
 		Creds: credentials.NewStaticV4(
-			e.config.GetString("minio.access_key"),
-			e.config.GetString("minio.secret_key"),
+			srv.cfg.GetString("minio.access_key"),
+			srv.cfg.GetString("minio.secret_key"),
 			"",
 		),
-		Secure: e.config.GetBool("minio.use_ssl"),
+		Secure: srv.cfg.GetBool("minio.use_ssl"),
 	})
 	if err != nil {
 		log.Fatalln(err)
 	}
-	e.client = client
+	srv.client = client
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
 
 	// Файлы интерфейса
-	// router.Use(static.Serve("/", static.LocalFile(path.Join("web", "public"), true)))
-	router.Use(static.Serve("/", EmbedFolder(web.FS, "public")))
+	if debug.Active {
+		router.Use(static.Serve("/", static.LocalFile(path.Join("web", "public"), true)))
+	} else {
+		router.Use(static.Serve("/", embedfs.EmbedFolder(web.FS, "public")))
+	}
 
 	// router.NoRoute(func(c *gin.Context) {
 	// 	log.Printf("%s doesn't exists, redirect on /\n", c.Request.URL.Path)
@@ -71,31 +78,30 @@ func New(cfg *viper.Viper, db database.Database) *Engine {
 	}))
 
 	// Обработчики
-	router.POST("/upload", e.HandleUpload())
-	router.GET("/download/:fileId", e.HandleDownload())
+	router.POST("/upload", srv.HandleUpload())
+	router.GET("/download/:fileId", srv.HandleDownload())
 
-	e.server = &http.Server{
+	srv.httpSrv = &http.Server{
 		Handler:      router,
 		WriteTimeout: 5 * time.Minute, // Таймаут ответа от сервера
 	}
 
-	return e
+	return srv
 }
 
-// Run
-func (e *Engine) Run(addr string) {
-	e.server.Addr = addr
-
+// Run запускает HTTP-сервер
+func (s *Server) Run(addr string) {
+	s.httpSrv.Addr = addr
 	go func() {
-		if err := e.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error: %s\n", err)
 		}
 	}()
 }
 
-// Stop
-func (e *Engine) Stop() error {
+// Stop останавливает HTTP-сервер
+func (s *Server) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return e.server.Shutdown(ctx)
+	return s.httpSrv.Shutdown(ctx)
 }

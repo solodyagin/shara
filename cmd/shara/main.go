@@ -8,17 +8,17 @@ import (
 	"path/filepath"
 	"runtime"
 
-	sqlitedb "shara/internal/database/sqlite"
-	"shara/internal/program"
-	"shara/internal/utils"
-	"shara/migrations"
-
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/kardianos/service"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
+
+	sqlitedb "shara/internal/database/sqlite"
+	"shara/internal/program"
+	"shara/internal/utils"
+	"shara/migrations"
 )
 
 func main() {
@@ -41,12 +41,12 @@ func main() {
 	cfg.SetDefault("service.description", "Shara Service")                       // Описание службы
 	cfg.SetDefault("server.host", "localhost")                                   // Хост сервера
 	cfg.SetDefault("server.port", 8032)                                          // Порт сервера
-	cfg.SetDefault("minio.endpoint", "myhost.company.lan:9000")                  //
-	cfg.SetDefault("minio.access_key", "MwIBRCEEcfS7dOKZ")                       //
-	cfg.SetDefault("minio.secret_key", "oxxQ2HUY1XpOY8SgEqiJR3FG7ZpFWGEL")       //
-	cfg.SetDefault("minio.bucket_name", "shara")                                 //
-	cfg.SetDefault("minio.location", "us-east-1")                                //
-	cfg.SetDefault("minio.use_ssl", false)                                       // HTTPS
+	cfg.SetDefault("minio.endpoint", "myhost.company.lan:9000")                  // MinIO точка подключения
+	cfg.SetDefault("minio.access_key", "MwIBRCEEcfS7dOKZ")                       // MinIO access key
+	cfg.SetDefault("minio.secret_key", "oxxQ2HUY1XpOY8SgEqiJR3FG7ZpFWGEL")       // MinIO secret key
+	cfg.SetDefault("minio.bucket_name", "shara")                                 // MinIO bucket name
+	cfg.SetDefault("minio.location", "us-east-1")                                // MinIO location
+	cfg.SetDefault("minio.use_ssl", false)                                       // MinIO HTTPS
 	cfg.SetDefault("max_upload_size", 104857600)                                 // 100 МБ
 	cfg.SetDefault("pathes.temp_dir", os.TempDir())                              // Путь до временной директории
 	cfg.SetDefault("pathes.database", filepath.Join(execDir, "database.sqlite")) // Путь до базы данных SQLite
@@ -87,7 +87,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: %s\n", err)
 	}
-	migrator.Up()
+	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Error: %s\n", err)
+	}
 
 	// Создаём программу
 	prg := program.New(cfg, db)
