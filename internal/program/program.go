@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/andoma-go/service"
+	"github.com/spf13/viper"
+
 	"shara/internal/database"
 	"shara/internal/engine"
-
-	"github.com/kardianos/service"
-	"github.com/spf13/viper"
 )
 
 type Program struct {

@@ -7,7 +7,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/gin-contrib/static"
+	"github.com/andoma-go/gin-contrib/static"
 	"github.com/gin-gonic/contrib/secure"
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
@@ -79,7 +79,7 @@ func NewServer(cfg *viper.Viper, db database.Database) *Server {
 
 	// Обработчики
 	router.POST("/upload", srv.HandleUpload())
-	router.GET("/download/:fileId", srv.HandleDownload())
+	router.GET("/download/:name", srv.HandleDownload())
 
 	srv.httpSrv = &http.Server{
 		Handler:      router,
@@ -94,7 +94,7 @@ func (s *Server) Run(addr string) {
 	s.httpSrv.Addr = addr
 	go func() {
 		if err := s.httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error: %s\n", err)
+			log.Fatalln(err)
 		}
 	}()
 }

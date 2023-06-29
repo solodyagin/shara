@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/gin-contrib/static"
+	"github.com/andoma-go/gin-contrib/static"
 )
 
 type embedFileSystem struct {

@@ -13,5 +13,6 @@
 /configs/*
 !/configs/dist.*
 /dist/
+/uploads/
 *.exe
 *.sqlite

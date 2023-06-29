@@ -4,6 +4,8 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Shara</title>
+		<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
 		<link href="css/bootstrap.min.css" rel="stylesheet" />
 		<link href="css/main.css" rel="stylesheet" />
 	</head>
@@ -41,7 +43,7 @@
 						</div>
 					</div>
 
-					<div class="alert-placeholder"></div>
+					<div id="messages-container"></div>
 				</div>
 			</div>
 		</div>
@@ -59,17 +61,17 @@
 			const $fileUploadSubmit = document.querySelector('.file-upload-submit');
 			const $fileDownload = document.querySelector('.file-download');
 			const $fileDownloadInput = document.querySelector('.file-download-input');
-			const $alertPlaceholder = document.querySelector('.alert-placeholder');
+			const $messagesContainer = document.querySelector('#messages-container');
 
-			const alert = (message, type) => {
+			const showMsg = (message, type) => {
 				const wrapper = document.createElement('div');
 				wrapper.innerHTML = [
 					`<div class="alert alert-${type} alert-dismissible fade show" role="alert">`,
 					`   <div>${message}</div>`,
-					'   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
-					'</div>',
+					`   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`,
+					`</div>`,
 				].join('');
-				$alertPlaceholder.append(wrapper);
+				$messagesContainer.append(wrapper);
 				setTimeout(() => bootstrap.Alert.getOrCreateInstance(wrapper).close(), 5000);
 			};
 
@@ -123,13 +125,13 @@
 				try {
 					const response = await submitForm($fileUploadForm);
 					const {
-						result: { fileId, origName },
+						result: { name, origName },
 					} = response;
-					$fileDownloadInput.value = `${window.location.protocol}//${window.location.host}/download/${fileId}`;
+					$fileDownloadInput.value = `${window.location.protocol}//${window.location.host}/download/${name}`;
 					$fileDownload.style.display = 'block';
-					alert('Файл успешно загружен', 'success');
+					showMsg('Файл успешно загружен', 'success');
 				} catch (err) {
-					alert(`${err.name}: ${err.message}`, 'danger');
+					showMsg(`${err.name}: ${err.message}`, 'danger');
 					console.error(`${err.name}: ${err.message}`);
 				}
 			});
@@ -138,9 +140,9 @@
 				const text = $fileDownloadInput.value;
 				try {
 					await navigator.clipboard.writeText(text);
-					alert('Ссылка скопирована в буфер обмена', 'success');
+					showMsg('Ссылка скопирована в буфер обмена', 'success');
 				} catch (err) {
-					alert(`${err.name}: ${err.message}`, 'danger');
+					showMsg(`${err.name}: ${err.message}`, 'danger');
 					console.error(`${err.name}: ${err.message}`);
 				}
 			};

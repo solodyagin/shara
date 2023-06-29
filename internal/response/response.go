@@ -12,8 +12,8 @@ const (
 )
 
 type Result struct {
+	Name     string `json:"name"`
 	OrigName string `json:"origName"`
-	FileId   string `json:"fileId"`
 	Size     int64  `json:"size"`
 }
 
