@@ -36,6 +36,7 @@ func (s *Server) HandleDownload() gin.HandlerFunc {
 		var fullPath string
 
 		switch s.cfg.GetString("storage") {
+
 		case "local":
 			// Открываем локальное файловое хранилище
 			store, err := filestore.Open(s.cfg.GetString("local.endpoint"))
@@ -59,8 +60,10 @@ func (s *Server) HandleDownload() gin.HandlerFunc {
 				response.SendError(c, http.StatusInternalServerError, "Возникла ошибка при создании временного файла")
 				return
 			}
-			defer tempFile.Close()
-			defer os.Remove(tempFile.Name())
+			defer func() {
+				tempFile.Close()
+				os.Remove(tempFile.Name())
+			}()
 
 			// Скачиваем из MinIO во временный файл
 			bucketName := s.cfg.GetString("minio.bucket_name")
