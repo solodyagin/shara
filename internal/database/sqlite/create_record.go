@@ -13,7 +13,7 @@ func (d *SqliteDB) CreateRecord(rec *models.Record) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(`insert into [files] ([name], [orig_name], [size]) values (:name, :orig_name, :size) on conflict([name]) do nothing;`)
+	stmt, err := tx.Prepare(`insert into "files" ("name", "orig_name", "size") values (:name, :orig_name, :size) on conflict("name") do nothing;`)
 	if err != nil {
 		tx.Rollback()
 		return err

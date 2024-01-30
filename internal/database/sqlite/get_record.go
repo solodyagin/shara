@@ -8,7 +8,7 @@ import (
 
 // GetRecord получает запись из базы
 func (d *SqliteDB) GetRecord(name string) (*models.Record, error) {
-	stmt, err := d.Prepare(`select [name], [orig_name], [size] from [files] where [name] = :name`)
+	stmt, err := d.Prepare(`select "name", "orig_name", "size" from "files" where "name" = :name`)
 	if err != nil {
 		return nil, err
 	}

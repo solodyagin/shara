@@ -3,7 +3,7 @@ package response
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/andoma-go/gin"
 )
 
 const (

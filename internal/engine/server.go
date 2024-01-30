@@ -7,9 +7,9 @@ import (
 	"path"
 	"time"
 
+	"github.com/andoma-go/gin"
+	"github.com/andoma-go/gin-contrib/secure"
 	"github.com/andoma-go/gin-contrib/static"
-	"github.com/gin-gonic/contrib/secure"
-	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"

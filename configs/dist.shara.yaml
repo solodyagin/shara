@@ -5,9 +5,12 @@ service:
 
 server:
   host: localhost
-  port: 8032
+  port: 8090
 
 storage: local
+
+local:
+  endpoint: uploads
 
 minio:
   endpoint: minio.company.lan:9000

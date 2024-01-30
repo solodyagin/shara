@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/andoma-go/filestore"
-	"github.com/gin-gonic/gin"
+	"github.com/andoma-go/gin"
 	"github.com/minio/minio-go/v7"
 
 	"shara/internal/models"
