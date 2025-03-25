@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/andoma-go/service"
+	"github.com/kardianos/service"
 	"github.com/spf13/viper"
 
 	"shara/internal/database"
@@ -32,7 +32,7 @@ func (p *Program) Start(s service.Service) error {
 	go func() {
 		addr := fmt.Sprintf("%s:%d", p.cfg.GetString("server.host"), p.cfg.GetInt("server.port"))
 		p.srv.Run(addr)
-		log.Printf("Server is running at %s\n", addr)
+		log.Printf("Server is running at http://%s\n", addr)
 		<-p.exit
 		_ = p.srv.Stop()
 	}()

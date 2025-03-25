@@ -10,9 +10,8 @@
 **/.history
 
 ### Ignored directories and files ###
-/configs/*
-!/configs/dist.*
-/dist/
+/dist/*
+!/dist/configs/
 /uploads/
 *.exe
 *.sqlite

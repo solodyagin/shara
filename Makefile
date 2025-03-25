@@ -7,22 +7,22 @@ SHELL=/usr/bin/bash
 build: linux
 endif
 
+ROOT_DIR := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+
 windows: prepare
 	export GOOS=windows
 	export GOARCH=amd64
 	export CGO_ENABLED=1
-	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o ./dist/shara.exe ./cmd/shara
+	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o "${ROOT_DIR}/dist/shara.exe" "${ROOT_DIR}/cmd/shara"
 
 linux: prepare
 	export GOOS=linux
 	export GOARCH=amd64
 	export CGO_ENABLED=1
-	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o ./dist/shara ./cmd/shara
+	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o "${ROOT_DIR}/dist/shara" "${ROOT_DIR}/cmd/shara"
 
 prepare:
-	@rm -rf ./dist/
-	@mkdir -p ./dist/configs/
-	@cp ./configs/dist.shara.yaml ./dist/configs/shara.yaml
+	find "${ROOT_DIR}/dist/" ! -name 'shara.yaml' -type f -exec rm -f {} +
 
 .PHONY: build windows linux
 .DEFAULT_GOAL=build

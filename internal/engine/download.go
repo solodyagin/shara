@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/andoma-go/filestore"
-	"github.com/andoma-go/gin"
+	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
+	"github.com/tenrok/filestore"
 
 	"shara/internal/response"
 )

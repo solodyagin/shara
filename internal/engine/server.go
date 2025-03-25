@@ -7,16 +7,16 @@ import (
 	"path"
 	"time"
 
-	"github.com/andoma-go/gin"
-	"github.com/andoma-go/gin-contrib/secure"
-	"github.com/andoma-go/gin-contrib/static"
+	"github.com/gin-gonic/contrib/secure"
+	"github.com/gin-gonic/contrib/static"
+	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
 
 	"shara/internal/database"
-	"shara/internal/debug"
 	"shara/internal/embedfs"
+	"shara/internal/mode"
 	"shara/web"
 )
 
@@ -52,7 +52,7 @@ func NewServer(cfg *viper.Viper, db database.Database) *Server {
 	router.Use(gin.Recovery())
 
 	// Файлы интерфейса
-	if debug.Active {
+	if mode.Debug {
 		router.Use(static.Serve("/", static.LocalFile(path.Join("web", "public"), true)))
 	} else {
 		router.Use(static.Serve("/", embedfs.EmbedFolder(web.FS, "public")))

@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/andoma-go/service"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/kardianos/service"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 
