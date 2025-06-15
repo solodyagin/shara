@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"path"
@@ -10,9 +11,10 @@ import (
 	"github.com/gin-gonic/contrib/secure"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
+	"github.com/tenrok/filestore"
+	"github.com/tenrok/filestore/remote"
+	_ "github.com/tenrok/filestore/remote/miniostorage"
 
 	"shara/internal/database"
 	"shara/internal/embedfs"
@@ -23,29 +25,46 @@ import (
 type Server struct {
 	cfg     *viper.Viper
 	db      database.Database
-	client  *minio.Client
+	fs      *filestore.HttpFS
 	httpSrv *http.Server
 }
 
 // NewServer
 func NewServer(cfg *viper.Viper, db database.Database) *Server {
-	srv := new(Server)
+	srv := &Server{}
 	srv.cfg = cfg
 	srv.db = db
 
-	// Инициализируем Minio клиент
-	client, err := minio.New(srv.cfg.GetString("minio.endpoint"), &minio.Options{
-		Creds: credentials.NewStaticV4(
+	opts := []filestore.HttpFSOption{}
+
+	if srv.cfg.GetString("storage") == "minio" {
+		secure := "0"
+		if srv.cfg.GetBool("minio.use_ssl") {
+			secure = "1"
+		}
+
+		connString := fmt.Sprintf(
+			"minio://%s:%s@%s/%s?secure=%s&region=%s",
 			srv.cfg.GetString("minio.access_key"),
 			srv.cfg.GetString("minio.secret_key"),
-			"",
-		),
-		Secure: srv.cfg.GetBool("minio.use_ssl"),
-	})
+			srv.cfg.GetString("minio.endpoint"),
+			srv.cfg.GetString("minio.bucket_name"),
+			secure,
+			srv.cfg.GetString("minio.region"),
+		)
+
+		storage, err := remote.NewStorage(context.Background(), connString)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		opts = append(opts, filestore.WithRemoteStorage(storage))
+	}
+
+	fs, err := filestore.NewHttpFS(srv.cfg.GetString("local.endpoint"), opts...)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	srv.client = client
+	srv.fs = fs
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()

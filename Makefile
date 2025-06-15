@@ -1,28 +1,49 @@
 .ONESHELL:
+.PHONY: windows linux clean all
+
+# Check for required command tools to build or stop immediately
+# TOOLS=git go find pwd
+# K:=$(foreach exec, $(TOOLS), $(if $(shell which $(exec)), , $(error "No $(exec) in PATH")))
+
 ifeq ($(OS),Windows_NT)
 SHELL=C:/Program Files/Git/bin/bash.exe
-build: windows
+default: windows
 else
 SHELL=/usr/bin/bash
-build: linux
+default: linux
 endif
 
 ROOT_DIR := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+OUTPUT_DIR=$(ROOT_DIR)/dist
+BASENAME=shara
 
-windows: prepare
-	export GOOS=windows
-	export GOARCH=amd64
-	export CGO_ENABLED=1
-	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o "${ROOT_DIR}/dist/shara.exe" "${ROOT_DIR}/cmd/shara"
+GOOS=linux
+GOARCH=amd64
+TAGS=-tags "osusergo,netgo,sqlite_omit_load_extension"
+LDLAGS=-ldflags '-s -w -extldflags "-static"'
+EXECUTABLE=$(BASENAME)-$(GOOS)-$(GOARCH)
 
-linux: prepare
-	export GOOS=linux
-	export GOARCH=amd64
-	export CGO_ENABLED=1
-	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o "${ROOT_DIR}/dist/shara" "${ROOT_DIR}/cmd/shara"
+windows: GOOS=windows
+windows: EXECUTABLE=$(BASENAME)-$(GOOS)-$(GOARCH).exe
+windows: --build
 
-prepare:
-	find "${ROOT_DIR}/dist/" ! -name 'shara.yaml' -type f -exec rm -f {} +
+linux: GOOS=linux
+linux: EXECUTABLE=$(BASENAME)-$(GOOS)-$(GOARCH)
+linux: --build
 
-.PHONY: build windows linux
-.DEFAULT_GOAL=build
+--build:
+	@mkdir -p "$(OUTPUT_DIR)/configs"
+	@cd "$(ROOT_DIR)"
+	@cp --update=none "./configs/example.shara.yaml" "$(OUTPUT_DIR)/configs/shara.yaml"
+	@export GOOS=$(GOOS)
+	@export GOARCH=$(GOARCH)
+	@export CGO_ENABLED=1
+	@go build -trimpath $(TAGS) $(LDLAGS) -o "$(OUTPUT_DIR)/$(EXECUTABLE)" "./cmd/shara"
+
+clean:
+	@find $(OUTPUT_DIR) -name '$(BASENAME)[-?][a-zA-Z0-9]*[-?][a-zA-Z0-9]*' -delete
+
+all:
+	@make clean
+	@make windows
+	@make linux

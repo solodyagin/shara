@@ -17,7 +17,7 @@ minio:
   access_key: Z8nCZCacYXUXUmd3
   secret_key: QlhcyMq2nLWotjGkzd3BiyC1igeYWPAE
   bucket_name: shara
-  location: us-east-1
+  region: us-east-1
   use_ssl: false
 
 max_upload_size: 104857600

@@ -12,24 +12,25 @@ func (d *SqliteDB) CreateRecord(rec *models.Record) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Prepare(`insert into "files" ("name", "orig_name", "size") values (:name, :orig_name, :size) on conflict("name") do nothing;`)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(
+	_, err = stmt.Exec(
 		sql.Named("name", rec.Name),
 		sql.Named("orig_name", rec.OrigName),
 		sql.Named("size", rec.Size),
-	); err != nil {
-		tx.Rollback()
+	)
+	if err != nil {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
+	err = tx.Commit()
+	if err != nil {
 		return err
 	}
 

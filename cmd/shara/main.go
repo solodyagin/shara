@@ -47,10 +47,9 @@ func main() {
 	cfg.SetDefault("minio.access_key", "MwIBRCEEcfS7dOKZ")                 // MinIO access key
 	cfg.SetDefault("minio.secret_key", "oxxQ2HUY1XpOY8SgEqiJR3FG7ZpFWGEL") // MinIO secret key
 	cfg.SetDefault("minio.bucket_name", "shara")                           // MinIO bucket name
-	cfg.SetDefault("minio.location", "us-east-1")                          // MinIO location
+	cfg.SetDefault("minio.region", "us-east-1")                            // MinIO region
 	cfg.SetDefault("minio.use_ssl", false)                                 // MinIO HTTPS
 	cfg.SetDefault("max_upload_size", 104857600)                           // Максимальный размер файла в байтах
-	cfg.SetDefault("temp_dir", os.TempDir())                               // Путь до временной директории
 	cfg.SetDefault("database", filepath.Join(execDir, "shara.sqlite"))     // Путь до базы данных SQLite
 
 	cfg.SetConfigName("shara")
