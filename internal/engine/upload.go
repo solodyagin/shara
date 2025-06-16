@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tenrok/filestore"
 
-	"shara/internal/models"
+	"shara/internal/database"
 	"shara/internal/response"
 )
 
@@ -67,7 +67,7 @@ func (s *Server) HandleUpload() gin.HandlerFunc {
 		}
 
 		// Записываем в БД
-		rec := &models.Record{
+		rec := &database.Record{
 			Name:     fileInfo.Name,
 			OrigName: fileHeader.Filename,
 			Size:     fileInfo.Size,
@@ -77,7 +77,7 @@ func (s *Server) HandleUpload() gin.HandlerFunc {
 			return
 		}
 
-		response.SendSuccess(c, fmt.Sprintf("Successfully uploaded \"%s\" of size %d", rec.OrigName, rec.Size), response.Result{
+		response.SendSuccess(c, fmt.Sprintf("Successfully uploaded %q of size %d", rec.OrigName, rec.Size), response.Result{
 			Name:     rec.Name,
 			OrigName: rec.OrigName,
 			Size:     rec.Size,

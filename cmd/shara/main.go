@@ -27,12 +27,10 @@ func main() {
 	flag.Parse()
 
 	// Определяем директории
-	execPath, err := os.Executable()
+	workingDir, err := os.Getwd()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	execDir, _ := filepath.Split(execPath)
-	execDir = filepath.Clean(execDir)
 
 	// Читаем конфигурационный файл
 	cfg := viper.New()
@@ -40,9 +38,9 @@ func main() {
 	cfg.SetDefault("service.display_name", "Shara Service")                // Отображаемое имя службы
 	cfg.SetDefault("service.description", "Shara Service")                 // Описание службы
 	cfg.SetDefault("server.host", "localhost")                             // Хост сервера
-	cfg.SetDefault("server.port", 8032)                                    // Порт сервера
+	cfg.SetDefault("server.port", 8090)                                    // Порт сервера
 	cfg.SetDefault("storage", "local")                                     // Выбор хранилища: local | minio
-	cfg.SetDefault("local.endpoint", filepath.Join(execDir, "uploads"))    // Путь до директории локального файлового хранилища
+	cfg.SetDefault("local.endpoint", filepath.Join(workingDir, "uploads")) // Путь до директории локального файлового хранилища
 	cfg.SetDefault("minio.endpoint", "myhost.company.lan:9000")            // MinIO точка подключения
 	cfg.SetDefault("minio.access_key", "MwIBRCEEcfS7dOKZ")                 // MinIO access key
 	cfg.SetDefault("minio.secret_key", "oxxQ2HUY1XpOY8SgEqiJR3FG7ZpFWGEL") // MinIO secret key
@@ -50,7 +48,7 @@ func main() {
 	cfg.SetDefault("minio.region", "us-east-1")                            // MinIO region
 	cfg.SetDefault("minio.use_ssl", false)                                 // MinIO HTTPS
 	cfg.SetDefault("max_upload_size", 104857600)                           // Максимальный размер файла в байтах
-	cfg.SetDefault("database", filepath.Join(execDir, "shara.sqlite"))     // Путь до базы данных SQLite
+	cfg.SetDefault("database", filepath.Join(workingDir, "shara.sqlite"))  // Путь до базы данных SQLite
 
 	cfg.SetConfigName("shara")
 	cfg.SetConfigType("yaml")
@@ -62,7 +60,7 @@ func main() {
 	case "windows":
 		cfg.AddConfigPath(filepath.Join(os.Getenv("PROGRAMDATA"), "Shara"))
 	}
-	cfg.AddConfigPath(filepath.Join(execDir, "configs"))
+	cfg.AddConfigPath(filepath.Join(workingDir, "configs"))
 
 	if err := cfg.ReadInConfig(); err != nil {
 		log.Fatalln(err)
@@ -146,7 +144,7 @@ func main() {
 		return
 	}
 
-	log.Printf("Used config file \"%s\"\n", cfg.ConfigFileUsed())
+	log.Printf("Used config file %q\n", cfg.ConfigFileUsed())
 
 	// Запускаем службу
 	if err := svc.Run(); err != nil {

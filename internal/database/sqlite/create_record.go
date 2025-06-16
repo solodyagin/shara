@@ -3,11 +3,11 @@ package sqlite
 import (
 	"database/sql"
 
-	"shara/internal/models"
+	"shara/internal/database"
 )
 
 // CreateRecord создаёт запись в базе
-func (d *SqliteDB) CreateRecord(rec *models.Record) error {
+func (d *SqliteDB) CreateRecord(rec *database.Record) error {
 	tx, err := d.Begin()
 	if err != nil {
 		return err

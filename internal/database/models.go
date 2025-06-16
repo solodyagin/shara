@@ -1,4 +1,4 @@
-package models
+package database
 
 type Record struct {
 	Name     string

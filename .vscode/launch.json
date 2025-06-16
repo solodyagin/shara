@@ -12,7 +12,7 @@
 			"program": "${workspaceFolder}/cmd/shara",
 			"cwd": "${workspaceFolder}",
 			"output": "${workspaceFolder}/__shara_debug.exe",
-			"buildFlags": "-tags=debug"
+			"buildFlags": "-tags 'debug'"
 		}
 	]
 }

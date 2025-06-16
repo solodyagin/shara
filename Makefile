@@ -13,14 +13,14 @@ SHELL=/usr/bin/bash
 default: linux
 endif
 
-ROOT_DIR := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
-OUTPUT_DIR=$(ROOT_DIR)/dist
+ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+OUTPUT_DIR=$(ROOT_DIR)/bin
 BASENAME=shara
 
 GOOS=linux
 GOARCH=amd64
 TAGS=-tags "osusergo,netgo,sqlite_omit_load_extension"
-LDLAGS=-ldflags '-s -w -extldflags "-static"'
+LDLAGS=-ldflags "-s -w -extldflags '-static'"
 EXECUTABLE=$(BASENAME)-$(GOOS)-$(GOARCH)
 
 windows: GOOS=windows
@@ -31,10 +31,12 @@ linux: GOOS=linux
 linux: EXECUTABLE=$(BASENAME)-$(GOOS)-$(GOARCH)
 linux: --build
 
---build:
-	@mkdir -p "$(OUTPUT_DIR)/configs"
+--prepare:
 	@cd "$(ROOT_DIR)"
-	@cp --update=none "./configs/example.shara.yaml" "$(OUTPUT_DIR)/configs/shara.yaml"
+	@cp -n "./configs/example.shara.yaml" "./configs/shara.yaml"
+
+--build: --prepare
+	@cd "$(ROOT_DIR)"
 	@export GOOS=$(GOOS)
 	@export GOARCH=$(GOARCH)
 	@export CGO_ENABLED=1

@@ -1,8 +1,6 @@
 package database
 
-import "shara/internal/models"
-
 type Database interface {
-	GetRecord(name string) (*models.Record, error)
-	CreateRecord(rec *models.Record) error
+	GetRecord(name string) (*Record, error)
+	CreateRecord(rec *Record) error
 }
