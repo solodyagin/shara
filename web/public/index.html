@@ -105,7 +105,7 @@
 			};
 
 			const submitForm = async form => {
-				const response = await fetch('upload', {
+				const response = await fetch('/upload', {
 					method: 'POST',
 					body: new FormData(form),
 				});
@@ -125,9 +125,9 @@
 				try {
 					const response = await submitForm($fileUploadForm);
 					const {
-						result: { name, origName },
+						result: { link, origName },
 					} = response;
-					$fileDownloadInput.value = `${window.location.protocol}//${window.location.host}/download/${name}`;
+					$fileDownloadInput.value = `${window.location.protocol}//${window.location.host}/download/${link}`;
 					$fileDownload.style.display = 'block';
 					showMsg('Файл успешно загружен', 'success');
 				} catch (err) {

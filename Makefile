@@ -1,28 +1,47 @@
 .ONESHELL:
+.PHONY: build build_linux build_windows clean all
+
+ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+OUTPUT_DIR:=$(ROOT_DIR)/bin
+BASENAME:=shara
+
+GOOS=linux
+GOARCH=amd64
+CGO_ENABLED=0
+TAGS=
+LDFLAGS=-ldflags "-s -w"
+EXT=
+OUTPUT=$(OUTPUT_DIR)/$(BASENAME)_$(GOOS)-$(GOARCH)$(EXT)
+
+TARGET=build_linux
+
 ifeq ($(OS),Windows_NT)
-SHELL=C:/Program Files/Git/bin/bash.exe
-build: windows
+	SHELL="$(PROGRAMFILES)/Git/bin/bash.exe"
+	TARGET=build_windows
 else
-SHELL=/usr/bin/bash
-build: linux
+	SHELL=/usr/bin/bash
 endif
 
-ROOT_DIR := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+build: $(TARGET)
 
-windows: prepare
-	export GOOS=windows
-	export GOARCH=amd64
-	export CGO_ENABLED=1
-	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o "${ROOT_DIR}/dist/shara.exe" "${ROOT_DIR}/cmd/shara"
+build_linux: --compile
 
-linux: prepare
-	export GOOS=linux
-	export GOARCH=amd64
-	export CGO_ENABLED=1
-	go build -trimpath -a --tags "osusergo,netgo,sqlite_omit_load_extension" -ldflags '-s -w -extldflags "-static"' -o "${ROOT_DIR}/dist/shara" "${ROOT_DIR}/cmd/shara"
+build_windows: GOOS=windows
+build_windows: EXT=.exe
+build_windows: --compile
 
-prepare:
-	find "${ROOT_DIR}/dist/" ! -name 'shara.yaml' -type f -exec rm -f {} +
+--compile:
+	@cd "$(ROOT_DIR)"
+	@cp -n "./configs/example.shara.yaml" "./configs/shara.yaml"
+	@export GOOS=$(GOOS)
+	@export GOARCH=$(GOARCH)
+	@export CGO_ENABLED=$(CGO_ENABLED)
+	@go build -trimpath $(TAGS) $(LDFLAGS) -o "$(OUTPUT)" "./cmd/shara"
 
-.PHONY: build windows linux
-.DEFAULT_GOAL=build
+clean:
+	@find $(OUTPUT_DIR) -type f -name '*' -delete
+
+all:
+	@make clean
+	@make linux
+	@make windows

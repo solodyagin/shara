@@ -1,0 +1,24 @@
+service:
+  name: shara
+  displayName: Shara Service
+  description: Shara Service
+
+server:
+  host: localhost
+  port: 8090
+
+storage: local
+
+storages:
+  local:
+    endpoint: uploads
+
+  minio:
+    endpoint: minio.company.local:9000
+    accessKey: Z8nCZCacYXUXUmd3
+    secretKey: QlhcyMq2nLWotjGkzd3BiyC1igeYWPAE
+    bucketName: shara
+    region: us-east-1
+    secure: false
+
+maxUploadSize: 104857600

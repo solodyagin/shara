@@ -12,7 +12,7 @@ const (
 )
 
 type Result struct {
-	Name     string `json:"name"`
+	Link     string `json:"link"`
 	OrigName string `json:"origName"`
 	Size     int64  `json:"size"`
 }

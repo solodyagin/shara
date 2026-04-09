@@ -4,15 +4,39 @@
 	"editor.fontWeight": "400",
 	"editor.foldingStrategy": "indentation",
 	"editor.rulers": [200],
+
 	"[html]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"[css]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
+
 	"prettier.arrowParens": "avoid",
 	"prettier.printWidth": 200,
 	"prettier.semi": true,
 	"prettier.singleQuote": true,
-	"prettier.useTabs": true
+	"prettier.useTabs": true,
+
+	// Extension "Go Struct Tag Autocomplete & Generator"
+	"goStructTagAutogen.generation": {
+		"template": "json:\"{{camel}}\" yaml:\"{{camel}}\""
+	},
+	"goStructTagAutogen.tagSuggestion": {
+		"json": {
+			"cases": ["camel"],
+			"options": ["omitempty", "-"]
+		},
+		"yaml": {
+			"cases": ["camel"],
+			"options": ["omitempty", "-"]
+		}
+	},
+	"goStructTagAutogen.valueSuggestion": {
+		"json": ["omitempty"],
+		"yaml": ["omitempty"]
+	},
+
+	// Extension "Todo Tree"
+	"todo-tree.general.showActivityBarBadge": true
 }

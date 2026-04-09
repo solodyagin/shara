@@ -7,18 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/kardianos/service"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 
-	sdb "shara/internal/database/sqlite"
-	"shara/internal/program"
-	"shara/internal/utils"
-	"shara/migrations"
+	"application/internal/shara/program"
 )
 
 func main() {
@@ -27,31 +21,28 @@ func main() {
 	flag.Parse()
 
 	// Определяем директории
-	execPath, err := os.Executable()
+	workingDir, err := os.Getwd()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	execDir, _ := filepath.Split(execPath)
-	execDir = filepath.Clean(execDir)
 
 	// Читаем конфигурационный файл
 	cfg := viper.New()
-	cfg.SetDefault("service.name", "shara")                                // Имя службы
-	cfg.SetDefault("service.display_name", "Shara Service")                // Отображаемое имя службы
-	cfg.SetDefault("service.description", "Shara Service")                 // Описание службы
-	cfg.SetDefault("server.host", "localhost")                             // Хост сервера
-	cfg.SetDefault("server.port", 8032)                                    // Порт сервера
-	cfg.SetDefault("storage", "local")                                     // Выбор хранилища: local | minio
-	cfg.SetDefault("local.endpoint", filepath.Join(execDir, "uploads"))    // Путь до директории локального файлового хранилища
-	cfg.SetDefault("minio.endpoint", "myhost.company.lan:9000")            // MinIO точка подключения
-	cfg.SetDefault("minio.access_key", "MwIBRCEEcfS7dOKZ")                 // MinIO access key
-	cfg.SetDefault("minio.secret_key", "oxxQ2HUY1XpOY8SgEqiJR3FG7ZpFWGEL") // MinIO secret key
-	cfg.SetDefault("minio.bucket_name", "shara")                           // MinIO bucket name
-	cfg.SetDefault("minio.location", "us-east-1")                          // MinIO location
-	cfg.SetDefault("minio.use_ssl", false)                                 // MinIO HTTPS
-	cfg.SetDefault("max_upload_size", 104857600)                           // Максимальный размер файла в байтах
-	cfg.SetDefault("temp_dir", os.TempDir())                               // Путь до временной директории
-	cfg.SetDefault("database", filepath.Join(execDir, "shara.sqlite"))     // Путь до базы данных SQLite
+	cfg.SetDefault("service.name", "shara")                                         // Имя службы
+	cfg.SetDefault("service.displayName", "Shara Service")                          // Отображаемое имя службы
+	cfg.SetDefault("service.description", "Shara Service")                          // Описание службы
+	cfg.SetDefault("server.host", "localhost")                                      // Хост сервера
+	cfg.SetDefault("server.port", 8090)                                             // Порт сервера
+	cfg.SetDefault("storage", "local")                                              // Выбор хранилища: local | minio
+	cfg.SetDefault("storages.local.endpoint", filepath.Join(workingDir, "uploads")) // Путь до директории локального файлового хранилища
+	cfg.SetDefault("storages.minio.endpoint", "myhost.company.local:9000")          // MinIO точка подключения
+	cfg.SetDefault("storages.minio.accessKey", "MwIBRCEEcfS7dOKZ")                  // MinIO access key
+	cfg.SetDefault("storages.minio.secretKey", "oxxQ2HUY1XpOY8SgEqiJR3FG7ZpFWGEL")  // MinIO secret key
+	cfg.SetDefault("storages.minio.bucketName", "shara")                            // MinIO bucket name
+	cfg.SetDefault("storages.minio.region", "us-east-1")                            // MinIO region
+	cfg.SetDefault("storages.minio.secure", false)                                  // MinIO HTTPS
+	cfg.SetDefault("maxUploadSize", 104857600)                                      // Максимальный размер файла в байтах
+	cfg.SetDefault("database", filepath.Join(workingDir, "shara.sqlite"))           // Путь до базы данных SQLite
 
 	cfg.SetConfigName("shara")
 	cfg.SetConfigType("yaml")
@@ -63,38 +54,17 @@ func main() {
 	case "windows":
 		cfg.AddConfigPath(filepath.Join(os.Getenv("PROGRAMDATA"), "Shara"))
 	}
-	cfg.AddConfigPath(filepath.Join(execDir, "configs"))
+	cfg.AddConfigPath(filepath.Join(workingDir, "configs"))
 
 	if err := cfg.ReadInConfig(); err != nil {
 		log.Fatalln(err)
 	}
 
-	// Открываем БД
-	db, err := sdb.New(cfg.GetString("database"))
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer db.Close()
-
-	// Выполняем миграцию БД
-	sourceInstance, err := iofs.New(migrations.FS, "sqlite")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	databaseInstance, err := sqlite3.WithInstance(db.DB, &sqlite3.Config{})
-	if err != nil {
-		log.Fatalln(err)
-	}
-	migrator, err := migrate.NewWithInstance("iofs", sourceInstance, "sqlite3", databaseInstance)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatalln(err)
-	}
-
 	// Создаём программу
-	prg := program.New(cfg, db)
+	prg, err := program.NewProgram(cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	// Задаём настройки для службы
 	options := make(service.KeyValue)
@@ -103,7 +73,7 @@ func main() {
 
 	svcConfig := &service.Config{
 		Name:        cfg.GetString("service.name"),
-		DisplayName: cfg.GetString("service.display_name"),
+		DisplayName: cfg.GetString("service.displayName"),
 		Description: cfg.GetString("service.description"),
 		Option:      options,
 	}
@@ -139,7 +109,7 @@ func main() {
 
 	// Управление службой
 	if len(*svcFlag) != 0 {
-		if !utils.Contains(service.ControlAction[:], *svcFlag, true) {
+		if !slices.Contains(service.ControlAction[:], *svcFlag) {
 			fmt.Fprintf(os.Stdout, "Valid actions: %q\n", service.ControlAction)
 		} else if err := service.Control(svc, *svcFlag); err != nil {
 			fmt.Fprintln(os.Stdout, err)
@@ -147,7 +117,7 @@ func main() {
 		return
 	}
 
-	log.Printf("Used config file \"%s\"\n", cfg.ConfigFileUsed())
+	log.Printf("Used config file %q\n", cfg.ConfigFileUsed())
 
 	// Запускаем службу
 	if err := svc.Run(); err != nil {

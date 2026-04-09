@@ -1,3 +1,11 @@
 {
-	"recommendations": ["esbenp.prettier-vscode"]
+	"recommendations": [
+		"aaron-bond.better-comments",
+		"alefragnani.numbered-bookmarks",
+		"eamodio.gitlens",
+		"esbenp.prettier-vscode",
+		"golang.go",
+		"gruntfuggly.todo-tree",
+		"maxnatchanon.go-struct-tag-autogen"
+	]
 }
